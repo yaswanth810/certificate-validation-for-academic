@@ -1,0 +1,39 @@
+{
+  "name": "vignan-blockchain-certificates",
+  "version": "1.0.0",
+  "description": "Blockchain-based certificate verification platform for Vignan Institute",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "verify:sepolia": "hardhat verify --network sepolia",
+    "gas-analysis": "hardhat run scripts/gas-analysis.ts",
+    "frontend:install": "cd frontend && npm install",
+    "frontend:dev": "cd frontend && npm start",
+    "frontend:build": "cd frontend && npm run build"
+  },
+  "keywords": [
+    "blockchain",
+    "certificates",
+    "nft",
+    "ethereum",
+    "vignan"
+  ],
+  "author": "Vignan Institute",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.8.0",
+    "chai": "^4.3.7",
+    "hardhat": "^2.17.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
+    "dotenv": "^16.3.1"
+  }
+}
