@@ -21,16 +21,19 @@ contract ScholarshipEscrow is AccessControl, Pausable, ReentrancyGuard {
     mapping(uint256 => Scholarship) public scholarships;
     mapping(address => uint256[]) public studentScholarships;
     mapping(address => uint256) public totalClaimed;
-    mapping(address => bool) public eligibleStudents;
+    mapping(uint256 => mapping(address => bool)) public scholarshipClaims; // scholarshipId => student => claimed
+    mapping(uint256 => EligibilityCriteria) public scholarshipCriteria;
     
     // Certificate NFT contract
     CertificateNFT public certificateNFT;
     
     // Events
-    event ScholarshipDeposited(
+    event ScholarshipCreated(
         uint256 indexed scholarshipId,
-        uint256 amount,
-        address[] eligibleStudents,
+        string name,
+        uint256 totalAmount,
+        uint256 maxRecipients,
+        uint256 deadline,
         uint256 timestamp
     );
     
@@ -48,14 +51,29 @@ contract ScholarshipEscrow is AccessControl, Pausable, ReentrancyGuard {
     
     // Structs
     struct Scholarship {
+        string name;
+        string description;
         uint256 totalAmount;
         uint256 claimedAmount;
         uint256 remainingAmount;
-        address[] eligibleStudents;
+        uint256 maxRecipients;
+        uint256 amountPerRecipient;
         uint256 createdAt;
-        uint256 releaseTime;
+        uint256 deadline;
         bool isActive;
         address createdBy;
+        address tokenAddress; // 0x0 for ETH, contract address for ERC20
+        string tokenSymbol;
+    }
+
+    struct EligibilityCriteria {
+        uint256 minGPA; // GPA * 100 (e.g., 350 for 3.5 GPA)
+        string[] requiredCourses;
+        string[] allowedDepartments;
+        uint256 minCertificates;
+        uint256 enrollmentAfter; // timestamp
+        uint256 enrollmentBefore; // timestamp
+        bool requiresAllCourses; // true = AND, false = OR
     }
     
     constructor(address _certificateNFT) {
@@ -67,45 +85,60 @@ contract ScholarshipEscrow is AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Deposit scholarship funds for eligible students
-     * @param amount Total scholarship amount
-     * @param _eligibleStudents Array of eligible student addresses
+     * @dev Create a new scholarship with eligibility criteria
+     * @param name Scholarship name
+     * @param description Scholarship description
+     * @param totalAmount Total scholarship amount
+     * @param maxRecipients Maximum number of recipients
+     * @param deadline Application deadline timestamp
+     * @param tokenAddress Token contract address (0x0 for ETH)
+     * @param tokenSymbol Token symbol
+     * @param criteria Eligibility criteria
      */
-    function depositScholarship(
-        uint256 amount,
-        address[] memory _eligibleStudents
+    function createScholarship(
+        string memory name,
+        string memory description,
+        uint256 totalAmount,
+        uint256 maxRecipients,
+        uint256 deadline,
+        address tokenAddress,
+        string memory tokenSymbol,
+        EligibilityCriteria memory criteria
     ) external payable onlyRole(SCHOLARSHIP_MANAGER_ROLE) whenNotPaused returns (uint256) {
-        require(amount > 0, "Amount must be greater than 0");
-        require(_eligibleStudents.length > 0, "No eligible students provided");
-        require(msg.value >= amount, "Insufficient ETH sent");
-        require(address(this).balance >= amount, "Insufficient contract balance");
+        require(totalAmount > 0, "Amount must be greater than 0");
+        require(maxRecipients > 0, "Max recipients must be greater than 0");
+        require(deadline > block.timestamp, "Deadline must be in the future");
+        require(bytes(name).length > 0, "Name cannot be empty");
+        
+        // For ETH scholarships, check msg.value
+        if (tokenAddress == address(0)) {
+            require(msg.value >= totalAmount, "Insufficient ETH sent");
+        }
         
         _scholarshipIdCounter++;
         uint256 scholarshipId = _scholarshipIdCounter;
         
-        // Mark students as eligible
-        for (uint256 i = 0; i < _eligibleStudents.length; i++) {
-            require(_eligibleStudents[i] != address(0), "Invalid student address");
-            eligibleStudents[_eligibleStudents[i]] = true;
-        }
+        uint256 amountPerRecipient = totalAmount / maxRecipients;
         
         scholarships[scholarshipId] = Scholarship({
-            totalAmount: amount,
+            name: name,
+            description: description,
+            totalAmount: totalAmount,
             claimedAmount: 0,
-            remainingAmount: amount,
-            eligibleStudents: _eligibleStudents,
+            remainingAmount: totalAmount,
+            maxRecipients: maxRecipients,
+            amountPerRecipient: amountPerRecipient,
             createdAt: block.timestamp,
-            releaseTime: block.timestamp + 30 days, // 30-day time lock
+            deadline: deadline,
             isActive: true,
-            createdBy: msg.sender
+            createdBy: msg.sender,
+            tokenAddress: tokenAddress,
+            tokenSymbol: tokenSymbol
         });
         
-        // Track scholarships for each student
-        for (uint256 i = 0; i < _eligibleStudents.length; i++) {
-            studentScholarships[_eligibleStudents[i]].push(scholarshipId);
-        }
+        scholarshipCriteria[scholarshipId] = criteria;
         
-        emit ScholarshipDeposited(scholarshipId, amount, _eligibleStudents, block.timestamp);
+        emit ScholarshipCreated(scholarshipId, name, totalAmount, maxRecipients, deadline, block.timestamp);
         
         return scholarshipId;
     }
@@ -118,44 +151,183 @@ contract ScholarshipEscrow is AccessControl, Pausable, ReentrancyGuard {
         Scholarship storage scholarship = scholarships[scholarshipId];
         
         require(scholarship.isActive, "Scholarship is not active");
-        require(block.timestamp >= scholarship.releaseTime, "Scholarship not yet released");
-        require(eligibleStudents[msg.sender], "Student not eligible for this scholarship");
+        require(block.timestamp <= scholarship.deadline, "Scholarship deadline has passed");
+        require(!scholarshipClaims[scholarshipId][msg.sender], "Already claimed this scholarship");
         require(scholarship.remainingAmount > 0, "No funds remaining");
+        require(scholarship.claimedAmount < scholarship.totalAmount, "Scholarship fully claimed");
         
-        // Check if student has required certificates
-        require(hasRequiredCertificates(msg.sender), "Student does not have required certificates");
+        // Check eligibility
+        require(isEligibleForScholarship(scholarshipId, msg.sender), "Student not eligible for this scholarship");
         
-        // Calculate claim amount (equal share for all eligible students)
-        uint256 claimAmount = scholarship.totalAmount / scholarship.eligibleStudents.length;
+        uint256 claimAmount = scholarship.amountPerRecipient;
         require(claimAmount <= scholarship.remainingAmount, "Insufficient funds for claim");
-        require(address(this).balance >= claimAmount, "Insufficient contract balance");
+        
+        // Mark as claimed
+        scholarshipClaims[scholarshipId][msg.sender] = true;
         
         // Update scholarship data
         scholarship.claimedAmount += claimAmount;
         scholarship.remainingAmount -= claimAmount;
         
         // Mark as inactive if fully claimed
-        if (scholarship.remainingAmount == 0) {
+        if (scholarship.remainingAmount == 0 || scholarship.claimedAmount >= scholarship.totalAmount) {
             scholarship.isActive = false;
         }
         
-        // Transfer funds to student
-        (bool success, ) = payable(msg.sender).call{value: claimAmount}("");
-        require(success, "Transfer failed");
+        // Transfer funds
+        if (scholarship.tokenAddress == address(0)) {
+            // ETH transfer
+            require(address(this).balance >= claimAmount, "Insufficient contract balance");
+            (bool success, ) = payable(msg.sender).call{value: claimAmount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // ERC20 transfer (to be implemented with IERC20 interface)
+            revert("ERC20 transfers not yet implemented");
+        }
         
         totalClaimed[msg.sender] += claimAmount;
+        studentScholarships[msg.sender].push(scholarshipId);
         
         emit ScholarshipClaimed(scholarshipId, msg.sender, claimAmount, block.timestamp);
     }
     
     /**
-     * @dev Check if student has required certificates
+     * @dev Check if student is eligible for a specific scholarship
+     * @param scholarshipId ID of the scholarship
      * @param student Address of the student
-     * @return True if student has certificates
+     * @return True if student meets all eligibility criteria
      */
-    function hasRequiredCertificates(address student) public view returns (bool) {
+    function isEligibleForScholarship(uint256 scholarshipId, address student) public view returns (bool) {
+        EligibilityCriteria memory criteria = scholarshipCriteria[scholarshipId];
+        
+        // Get student's certificates
         uint256[] memory studentCerts = certificateNFT.getStudentCertificates(student);
-        return studentCerts.length > 0;
+        
+        // Check minimum certificates requirement
+        if (studentCerts.length < criteria.minCertificates) {
+            return false;
+        }
+        
+        // Check course requirements
+        if (criteria.requiredCourses.length > 0) {
+            bool hasRequiredCourses = checkCourseRequirements(student, criteria.requiredCourses, criteria.requiresAllCourses);
+            if (!hasRequiredCourses) {
+                return false;
+            }
+        }
+        
+        // Check department requirements
+        if (criteria.allowedDepartments.length > 0) {
+            bool hasValidDepartment = checkDepartmentRequirement(student, criteria.allowedDepartments);
+            if (!hasValidDepartment) {
+                return false;
+            }
+        }
+        
+        // Check enrollment date requirements
+        if (criteria.enrollmentAfter > 0 || criteria.enrollmentBefore > 0) {
+            bool hasValidEnrollment = checkEnrollmentRequirement(student, criteria.enrollmentAfter, criteria.enrollmentBefore);
+            if (!hasValidEnrollment) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * @dev Check if student has required courses
+     * @param student Address of the student
+     * @param requiredCourses Array of required course names
+     * @param requiresAll True if all courses required, false if any course is sufficient
+     * @return True if course requirements are met
+     */
+    function checkCourseRequirements(address student, string[] memory requiredCourses, bool requiresAll) public view returns (bool) {
+        uint256[] memory studentCerts = certificateNFT.getStudentCertificates(student);
+        
+        if (requiresAll) {
+            // Student must have ALL required courses
+            for (uint256 i = 0; i < requiredCourses.length; i++) {
+                bool hasCourse = false;
+                for (uint256 j = 0; j < studentCerts.length; j++) {
+                    (, string memory courseName, , , , , ,) = certificateNFT.certificates(studentCerts[j]);
+                    if (keccak256(abi.encodePacked(courseName)) == keccak256(abi.encodePacked(requiredCourses[i]))) {
+                        hasCourse = true;
+                        break;
+                    }
+                }
+                if (!hasCourse) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            // Student must have ANY of the required courses
+            for (uint256 i = 0; i < requiredCourses.length; i++) {
+                for (uint256 j = 0; j < studentCerts.length; j++) {
+                    (, string memory courseName, , , , , ,) = certificateNFT.certificates(studentCerts[j]);
+                    if (keccak256(abi.encodePacked(courseName)) == keccak256(abi.encodePacked(requiredCourses[i]))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    
+    /**
+     * @dev Check if student belongs to allowed departments
+     * @param student Address of the student
+     * @param allowedDepartments Array of allowed department names
+     * @return True if student belongs to an allowed department
+     */
+    function checkDepartmentRequirement(address student, string[] memory allowedDepartments) public view returns (bool) {
+        uint256[] memory studentCerts = certificateNFT.getStudentCertificates(student);
+        
+        if (studentCerts.length == 0) {
+            return false;
+        }
+        
+        // Check the department of the student's most recent certificate
+        uint256 latestCertId = studentCerts[studentCerts.length - 1];
+        (, , , , string memory department, , ,) = certificateNFT.certificates(latestCertId);
+        
+        for (uint256 i = 0; i < allowedDepartments.length; i++) {
+            if (keccak256(abi.encodePacked(department)) == keccak256(abi.encodePacked(allowedDepartments[i]))) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    /**
+     * @dev Check if student meets enrollment date requirements
+     * @param student Address of the student
+     * @param enrollmentAfter Minimum enrollment timestamp (0 to ignore)
+     * @param enrollmentBefore Maximum enrollment timestamp (0 to ignore)
+     * @return True if enrollment requirements are met
+     */
+    function checkEnrollmentRequirement(address student, uint256 enrollmentAfter, uint256 enrollmentBefore) public view returns (bool) {
+        uint256[] memory studentCerts = certificateNFT.getStudentCertificates(student);
+        
+        if (studentCerts.length == 0) {
+            return false;
+        }
+        
+        // Use the issue date of the first certificate as enrollment date
+        uint256 firstCertId = studentCerts[0];
+        (, , , , , uint256 enrollmentDate, ,) = certificateNFT.certificates(firstCertId);
+        
+        if (enrollmentAfter > 0 && enrollmentDate < enrollmentAfter) {
+            return false;
+        }
+        
+        if (enrollmentBefore > 0 && enrollmentDate > enrollmentBefore) {
+            return false;
+        }
+        
+        return true;
     }
     
     /**

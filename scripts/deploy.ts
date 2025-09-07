@@ -7,27 +7,27 @@ async function main() {
   console.log("Starting deployment of Vignan Institute Blockchain Certificate Platform...\n");
 
   // Get the deployer account
-  const [deployer] = await hre.ethers.getSigners();
+  const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
-  console.log("Account balance:", hre.ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
+  console.log("Account balance:", ethers.formatEther(await deployer.provider.getBalance(deployer.address)), "ETH");
 
   // Deploy VignanRegistry first
   console.log("\n1. Deploying VignanRegistry...");
-  const VignanRegistry = await hre.ethers.getContractFactory("VignanRegistry");
+  const VignanRegistry = await ethers.getContractFactory("VignanRegistry");
   const vignanRegistry = await VignanRegistry.deploy();
   await vignanRegistry.waitForDeployment();
   console.log("VignanRegistry deployed to:", await vignanRegistry.getAddress());
 
   // Deploy CertificateNFT
   console.log("\n2. Deploying CertificateNFT...");
-  const CertificateNFT = await hre.ethers.getContractFactory("CertificateNFT");
+  const CertificateNFT = await ethers.getContractFactory("CertificateNFT");
   const certificateNFT = await CertificateNFT.deploy();
   await certificateNFT.waitForDeployment();
   console.log("CertificateNFT deployed to:", await certificateNFT.getAddress());
 
   // Deploy ScholarshipEscrow with CertificateNFT address
   console.log("\n3. Deploying ScholarshipEscrow...");
-  const ScholarshipEscrow = await hre.ethers.getContractFactory("ScholarshipEscrow");
+  const ScholarshipEscrow = await ethers.getContractFactory("ScholarshipEscrow");
   const scholarshipEscrow = await ScholarshipEscrow.deploy(await certificateNFT.getAddress());
   await scholarshipEscrow.waitForDeployment();
   console.log("ScholarshipEscrow deployed to:", await scholarshipEscrow.getAddress());
@@ -117,24 +117,52 @@ async function main() {
   
   try {
     // Scholarship 1: Merit Scholarship
-    const txS1 = await scholarshipEscrow.depositScholarship(
-      hre.ethers.parseEther("0.1"), // 0.1 ETH for testing
-      [testStudent], // Test student
-      { value: hre.ethers.parseEther("0.1") }
+    const eligibilityCriteria1 = {
+      minGPA: ethers.parseUnits("3.5", 18), // 3.5 GPA
+      requiredCertificates: ["Computer Science Fundamentals"],
+      allowedDepartments: ["Computer Science"],
+      minEnrollmentDate: 0,
+      maxEnrollmentDate: 0
+    };
+
+    const txS1 = await scholarshipEscrow.createScholarship(
+      "Merit Scholarship",
+      "Excellence in Computer Science",
+      ethers.parseEther("0.1"), // 0.1 ETH for testing
+      5, // max recipients
+      Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60), // 30 days deadline
+      ethers.ZeroAddress, // ETH
+      "ETH",
+      eligibilityCriteria1,
+      { value: ethers.parseEther("0.1") }
     );
     await txS1.wait();
-    console.log("Created scholarship 1, ID: 1");
-    console.log("Amount: 0.1 ETH, Eligible student:", testStudent);
+    console.log("Created scholarship 1: Merit Scholarship");
+    console.log("Amount: 0.1 ETH, Max recipients: 5");
 
     // Scholarship 2: Engineering Excellence
-    const txS2 = await scholarshipEscrow.depositScholarship(
-      hre.ethers.parseEther("0.05"), // 0.05 ETH for testing
-      [testStudent], // Test student
-      { value: hre.ethers.parseEther("0.05") }
+    const eligibilityCriteria2 = {
+      minGPA: ethers.parseUnits("3.0", 18), // 3.0 GPA
+      requiredCertificates: ["Data Structures and Algorithms"],
+      allowedDepartments: ["Computer Science", "Electrical Engineering"],
+      minEnrollmentDate: 0,
+      maxEnrollmentDate: 0
+    };
+
+    const txS2 = await scholarshipEscrow.createScholarship(
+      "Engineering Excellence",
+      "Outstanding performance in engineering courses",
+      ethers.parseEther("0.05"), // 0.05 ETH for testing
+      3, // max recipients
+      Math.floor(Date.now() / 1000) + (45 * 24 * 60 * 60), // 45 days deadline
+      ethers.ZeroAddress, // ETH
+      "ETH",
+      eligibilityCriteria2,
+      { value: ethers.parseEther("0.05") }
     );
     await txS2.wait();
-    console.log("Created scholarship 2, ID: 2");
-    console.log("Amount: 0.05 ETH, Eligible student:", testStudent);
+    console.log("Created scholarship 2: Engineering Excellence");
+    console.log("Amount: 0.05 ETH, Max recipients: 3");
   } catch (error) {
     console.error("Error creating scholarships:", error);
     throw error;
@@ -171,7 +199,7 @@ async function main() {
   console.log("\n" + "=".repeat(80));
   console.log("DEPLOYMENT SUMMARY");
   console.log("=".repeat(80));
-  const deploymentNetwork = await hre.ethers.provider.getNetwork();
+  const deploymentNetwork = await ethers.provider.getNetwork();
   console.log("Network:", deploymentNetwork.name);
   console.log("Chain ID:", deploymentNetwork.chainId);
   console.log("Deployer:", deployer.address);
