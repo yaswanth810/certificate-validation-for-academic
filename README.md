@@ -80,8 +80,8 @@ project-root/
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd blockchain-based-verification
+git clone https://github.com/yaswanth810/Vignan-Certificate-creation-portal.git
+cd Vignan-Certificate-creation-portal
 ```
 
 ### 2. Install Dependencies
@@ -109,9 +109,9 @@ Required environment variables:
 PRIVATE_KEY=your_private_key_here
 ETHERSCAN_API_KEY=your_etherscan_api_key_here
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/your_project_id
-REACT_APP_CERTIFICATE_NFT_ADDRESS=
-REACT_APP_SCHOLARSHIP_ESCROW_ADDRESS=
-REACT_APP_VIGNAN_REGISTRY_ADDRESS=
+REACT_APP_CERTIFICATE_NFT_ADDRESS=0x882d62F53217Bc62a8630BbDB2686C1fF8Dcee3f
+REACT_APP_SCHOLARSHIP_ESCROW_ADDRESS=0xc14daff9137be2D732f82637A46aaD4bb914E370
+REACT_APP_VIGNAN_REGISTRY_ADDRESS=0x88dFb81fF202abFcf22F92B2eE0dA0fE85F222dF
 REACT_APP_NETWORK_ID=11155111
 ```
 
