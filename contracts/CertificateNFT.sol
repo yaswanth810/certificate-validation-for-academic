@@ -25,6 +25,10 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     mapping(address => uint256[]) public studentCertificates;
     mapping(string => bool) public usedHashes;
     
+    // CID mapping for certificate metadata
+    mapping(uint256 => string) public tokenIdToCID;
+    mapping(string => uint256) public cidToTokenId;
+    
     // Semester Certificate mappings
     mapping(uint256 => SemesterCertificate) public semesterCertificates;
     mapping(address => uint256[]) public studentSemesterCerts;
@@ -44,6 +48,7 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     
     event CertificateRevoked(uint256 indexed tokenId, address indexed student, address indexed admin);
     event CertificateVerified(uint256 indexed tokenId, bool isValid);
+    event CertificateMetadataStored(uint256 indexed tokenId, string indexed cid, address indexed student);
     
     // Semester Certificate Events
     event SemesterCertificateIssued(
@@ -155,7 +160,12 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
         ));
         _setTokenURI(tokenId, _tokenURI);
         
+        // Store CID mapping
+        tokenIdToCID[tokenId] = ipfsHash;
+        cidToTokenId[ipfsHash] = tokenId;
+        
         emit CertificateIssued(tokenId, student, courseName, "", grade, ipfsHash, block.timestamp);
+        emit CertificateMetadataStored(tokenId, ipfsHash, student);
         
         return tokenId;
     }
@@ -229,6 +239,27 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
      */
     function getStudentCertificates(address student) external view returns (uint256[] memory) {
         return studentCertificates[student];
+    }
+    
+    /**
+     * @dev Get CID for a token ID
+     * @param tokenId ID of the token
+     * @return IPFS CID string
+     */
+    function getCIDByTokenId(uint256 tokenId) external view returns (string memory) {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        return tokenIdToCID[tokenId];
+    }
+    
+    /**
+     * @dev Get token ID for a CID
+     * @param cid IPFS CID string
+     * @return Token ID
+     */
+    function getTokenIdByCID(string memory cid) external view returns (uint256) {
+        uint256 tokenId = cidToTokenId[cid];
+        require(tokenId != 0, "CID not found");
+        return tokenId;
     }
     
     /**

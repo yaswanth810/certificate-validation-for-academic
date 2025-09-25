@@ -146,12 +146,15 @@ export interface CertificateNFTInterface extends Interface {
       | "balanceOf"
       | "calculateSGPA"
       | "certificates"
+      | "cidToTokenId"
       | "getApproved"
+      | "getCIDByTokenId"
       | "getCertificateData"
       | "getRoleAdmin"
       | "getSemesterCertificate"
       | "getStudentCertificates"
       | "getStudentSemesterCertificates"
+      | "getTokenIdByCID"
       | "grantRole"
       | "hasRole"
       | "isApprovedForAll"
@@ -176,6 +179,7 @@ export interface CertificateNFTInterface extends Interface {
       | "studentSemesterCerts"
       | "supportsInterface"
       | "symbol"
+      | "tokenIdToCID"
       | "tokenURI"
       | "transferFrom"
       | "unpause"
@@ -194,6 +198,7 @@ export interface CertificateNFTInterface extends Interface {
       | "ApprovalForAll"
       | "BatchMetadataUpdate"
       | "CertificateIssued"
+      | "CertificateMetadataStored"
       | "CertificateRevoked"
       | "CertificateVerified"
       | "MetadataUpdate"
@@ -236,7 +241,15 @@ export interface CertificateNFTInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "cidToTokenId",
+    values: [string]
+  ): string;
+  encodeFunctionData(
     functionFragment: "getApproved",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getCIDByTokenId",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -258,6 +271,10 @@ export interface CertificateNFTInterface extends Interface {
   encodeFunctionData(
     functionFragment: "getStudentSemesterCertificates",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getTokenIdByCID",
+    values: [string]
   ): string;
   encodeFunctionData(
     functionFragment: "grantRole",
@@ -346,6 +363,10 @@ export interface CertificateNFTInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "tokenIdToCID",
+    values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "tokenURI",
     values: [BigNumberish]
   ): string;
@@ -400,7 +421,15 @@ export interface CertificateNFTInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "cidToTokenId",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "getApproved",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getCIDByTokenId",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -421,6 +450,10 @@ export interface CertificateNFTInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "getStudentSemesterCertificates",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "getTokenIdByCID",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "grantRole", data: BytesLike): Result;
@@ -492,6 +525,10 @@ export interface CertificateNFTInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "tokenIdToCID",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "tokenURI", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "transferFrom",
@@ -608,6 +645,24 @@ export namespace CertificateIssuedEvent {
     grade: string;
     ipfsHash: string;
     timestamp: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace CertificateMetadataStoredEvent {
+  export type InputTuple = [
+    tokenId: BigNumberish,
+    cid: string,
+    student: AddressLike
+  ];
+  export type OutputTuple = [tokenId: bigint, cid: string, student: string];
+  export interface OutputObject {
+    tokenId: bigint;
+    cid: string;
+    student: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -896,7 +951,15 @@ export interface CertificateNFT extends BaseContract {
     "view"
   >;
 
+  cidToTokenId: TypedContractMethod<[arg0: string], [bigint], "view">;
+
   getApproved: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+
+  getCIDByTokenId: TypedContractMethod<
+    [tokenId: BigNumberish],
+    [string],
+    "view"
+  >;
 
   getCertificateData: TypedContractMethod<
     [tokenId: BigNumberish],
@@ -923,6 +986,8 @@ export interface CertificateNFT extends BaseContract {
     [bigint[]],
     "view"
   >;
+
+  getTokenIdByCID: TypedContractMethod<[cid: string], [bigint], "view">;
 
   grantRole: TypedContractMethod<
     [role: BytesLike, account: AddressLike],
@@ -1084,6 +1149,8 @@ export interface CertificateNFT extends BaseContract {
 
   symbol: TypedContractMethod<[], [string], "view">;
 
+  tokenIdToCID: TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+
   tokenURI: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
 
   transferFrom: TypedContractMethod<
@@ -1183,7 +1250,13 @@ export interface CertificateNFT extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "cidToTokenId"
+  ): TypedContractMethod<[arg0: string], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getApproved"
+  ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
+  getFunction(
+    nameOrSignature: "getCIDByTokenId"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
   getFunction(
     nameOrSignature: "getCertificateData"
@@ -1208,6 +1281,9 @@ export interface CertificateNFT extends BaseContract {
   getFunction(
     nameOrSignature: "getStudentSemesterCertificates"
   ): TypedContractMethod<[student: AddressLike], [bigint[]], "view">;
+  getFunction(
+    nameOrSignature: "getTokenIdByCID"
+  ): TypedContractMethod<[cid: string], [bigint], "view">;
   getFunction(
     nameOrSignature: "grantRole"
   ): TypedContractMethod<
@@ -1377,6 +1453,9 @@ export interface CertificateNFT extends BaseContract {
     nameOrSignature: "symbol"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "tokenIdToCID"
+  ): TypedContractMethod<[arg0: BigNumberish], [string], "view">;
+  getFunction(
     nameOrSignature: "tokenURI"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
   getFunction(
@@ -1464,6 +1543,13 @@ export interface CertificateNFT extends BaseContract {
     CertificateIssuedEvent.InputTuple,
     CertificateIssuedEvent.OutputTuple,
     CertificateIssuedEvent.OutputObject
+  >;
+  getEvent(
+    key: "CertificateMetadataStored"
+  ): TypedContractEvent<
+    CertificateMetadataStoredEvent.InputTuple,
+    CertificateMetadataStoredEvent.OutputTuple,
+    CertificateMetadataStoredEvent.OutputObject
   >;
   getEvent(
     key: "CertificateRevoked"
@@ -1586,6 +1672,17 @@ export interface CertificateNFT extends BaseContract {
       CertificateIssuedEvent.InputTuple,
       CertificateIssuedEvent.OutputTuple,
       CertificateIssuedEvent.OutputObject
+    >;
+
+    "CertificateMetadataStored(uint256,string,address)": TypedContractEvent<
+      CertificateMetadataStoredEvent.InputTuple,
+      CertificateMetadataStoredEvent.OutputTuple,
+      CertificateMetadataStoredEvent.OutputObject
+    >;
+    CertificateMetadataStored: TypedContractEvent<
+      CertificateMetadataStoredEvent.InputTuple,
+      CertificateMetadataStoredEvent.OutputTuple,
+      CertificateMetadataStoredEvent.OutputObject
     >;
 
     "CertificateRevoked(uint256,address,address)": TypedContractEvent<

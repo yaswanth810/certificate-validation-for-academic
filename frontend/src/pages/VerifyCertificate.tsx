@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useWeb3 } from '../contexts/Web3Context';
 import { useCertificateVerification } from '../hooks/useContract';
+import { ethers } from 'ethers';
 import { 
   Search, 
   QrCode, 
@@ -10,25 +11,31 @@ import {
   Copy,
   Download,
   ExternalLink,
-  AlertCircle,
-  GraduationCap
+  AlertCircle
 } from 'lucide-react';
 import Logo from '../components/Logo';
 
 const VerifyCertificate: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const { isConnected } = useWeb3();
+  const { provider } = useWeb3();
   const { verificationResult, verifyCertificate } = useCertificateVerification();
   const [tokenId, setTokenId] = useState('');
-  const [verificationMethod, setVerificationMethod] = useState<'tokenId' | 'qr'>('tokenId');
+  const [verificationMethod, setVerificationMethod] = useState<'tokenId' | 'qr' | 'cid'>('tokenId');
   const [qrData, setQrData] = useState('');
+  const [cidData, setCidData] = useState('');
 
-  // Check for tokenId in URL params
+  // Check for tokenId or CID in URL params
   useEffect(() => {
     const urlTokenId = searchParams.get('tokenId');
+    const urlCid = searchParams.get('cid');
+    
     if (urlTokenId) {
       setTokenId(urlTokenId);
       verifyCertificate(urlTokenId);
+    } else if (urlCid) {
+      setCidData(urlCid);
+      setVerificationMethod('cid');
+      handleCIDVerification(urlCid);
     }
   }, [searchParams, verifyCertificate]);
 
@@ -61,6 +68,42 @@ const VerifyCertificate: React.FC = () => {
           alert('Invalid QR code data. Please scan a valid certificate QR code.');
         }
       }
+    }
+  };
+
+  const handleCIDVerification = async (cid: string) => {
+    if (!provider) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      // Create contract instance for CID lookup
+      const contractAddress = import.meta.env.VITE_CERTIFICATE_NFT_ADDRESS;
+      const contractABI = [
+        "function getTokenIdByCID(string memory cid) external view returns (uint256)",
+        "function verifyCertificate(uint256 tokenId) external view returns (tuple(string studentName, string courseName, string grade, string ipfsHash, string department, uint256 issueDate, bool isRevoked, address issuer) certificateData, bool isValid)"
+      ];
+      
+      const contract = new ethers.Contract(contractAddress, contractABI, provider);
+      
+      // Get token ID from CID
+      const retrievedTokenId = await contract.getTokenIdByCID(cid);
+      const tokenIdString = retrievedTokenId.toString();
+      
+      // Set the token ID and verify
+      setTokenId(tokenIdString);
+      verifyCertificate(tokenIdString);
+    } catch (error: any) {
+      console.error('Error verifying by CID:', error);
+      alert('Failed to verify certificate by CID. The CID might not exist or be invalid.');
+    }
+  };
+
+  const handleCIDSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (cidData.trim()) {
+      handleCIDVerification(cidData.trim());
     }
   };
 
@@ -146,6 +189,16 @@ const VerifyCertificate: React.FC = () => {
               >
                 QR Code
               </button>
+              <button
+                onClick={() => setVerificationMethod('cid')}
+                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                  verificationMethod === 'cid'
+                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
+                }`}
+              >
+                IPFS CID
+              </button>
             </div>
           </div>
 
@@ -183,7 +236,7 @@ const VerifyCertificate: React.FC = () => {
                 )}
               </button>
             </form>
-          ) : (
+          ) : verificationMethod === 'qr' ? (
             <form onSubmit={handleQRSubmit} className="space-y-4">
               <div>
                 <label className="label">
@@ -213,6 +266,43 @@ const VerifyCertificate: React.FC = () => {
                   <>
                     <QrCode className="w-4 h-4" />
                     <span>Verify from QR Code</span>
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleCIDSubmit} className="space-y-4">
+              <div>
+                <label className="label">
+                  <ExternalLink className="w-4 h-4 inline mr-2" />
+                  IPFS CID
+                </label>
+                <input
+                  type="text"
+                  value={cidData}
+                  onChange={(e) => setCidData(e.target.value)}
+                  className="input"
+                  placeholder="Enter IPFS CID (e.g., QmSampleHash...)"
+                  required
+                />
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Enter the IPFS Content Identifier to look up the certificate
+                </p>
+              </div>
+              <button
+                type="submit"
+                disabled={verificationResult.loading}
+                className="w-full btn-primary flex items-center justify-center space-x-2"
+              >
+                {verificationResult.loading ? (
+                  <>
+                    <div className="loading-spinner" />
+                    <span>Verifying...</span>
+                  </>
+                ) : (
+                  <>
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Verify by CID</span>
                   </>
                 )}
               </button>
@@ -398,7 +488,7 @@ const VerifyCertificate: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           How to Verify Certificates
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Using Token ID</h4>
             <ol className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
@@ -413,6 +503,14 @@ const VerifyCertificate: React.FC = () => {
               <li>1. Scan the QR code with your camera</li>
               <li>2. Paste the QR data in the text area</li>
               <li>3. Click "Verify from QR Code"</li>
+            </ol>
+          </div>
+          <div>
+            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Using IPFS CID</h4>
+            <ol className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
+              <li>1. Enter the IPFS Content Identifier</li>
+              <li>2. Click "Verify by CID"</li>
+              <li>3. System looks up token ID and verifies</li>
             </ol>
           </div>
         </div>

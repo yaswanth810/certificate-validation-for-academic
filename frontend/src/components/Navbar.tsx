@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Shield, Home, User, Settings, CheckCircle } from 'lucide-react';
+import { Menu, X, Shield, Home, User, Settings, CheckCircle, FileText } from 'lucide-react';
 import { useWeb3 } from '../contexts/Web3Context';
 import { formatAddress } from '../utils/web3';
 import Logo from './Logo';
@@ -90,6 +90,17 @@ const Navbar: React.FC = () => {
             >
               <CheckCircle className="w-4 h-4" />
               <span>Verify</span>
+            </Link>
+            <Link
+              to="/legacy-mint"
+              className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                isActive('/legacy-mint') 
+                  ? 'text-white bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg shadow-blue-500/25' 
+                  : 'text-gray-700 hover:text-blue-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:shadow-md'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Legacy Mint</span>
             </Link>
           </div>
 
@@ -202,6 +213,18 @@ const Navbar: React.FC = () => {
               >
                 <CheckCircle className="w-5 h-5" />
                 <span>Verify Certificate</span>
+              </Link>
+              <Link
+                to="/legacy-mint"
+                onClick={closeMobileMenu}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-all duration-200 ${
+                  isActive('/legacy-mint') 
+                    ? 'text-blue-600 bg-blue-50 shadow-sm' 
+                    : 'text-gray-600 hover:text-blue-600 hover:bg-blue-50/50'
+                }`}
+              >
+                <FileText className="w-5 h-5" />
+                <span>Legacy Certificate Mint</span>
               </Link>
               
               {/* Mobile Wallet Section */}

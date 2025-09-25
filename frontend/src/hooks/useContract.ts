@@ -105,6 +105,36 @@ export interface ScholarshipData {
   tokenSymbol: string;
 }
 
+export const useCIDVerification = () => {
+  const { contracts } = useContract();
+  
+  const getTokenIdFromCID = async (cid: string): Promise<string | null> => {
+    if (!contracts.certificateNFT) return null;
+    
+    try {
+      const tokenId = await contracts.certificateNFT.getTokenIdByCID(cid);
+      return tokenId.toString();
+    } catch (err: any) {
+      console.error('Error getting token ID from CID:', err);
+      return null;
+    }
+  };
+  
+  const getCIDFromTokenId = async (tokenId: string): Promise<string | null> => {
+    if (!contracts.certificateNFT) return null;
+    
+    try {
+      const cid = await contracts.certificateNFT.getCIDByTokenId(tokenId);
+      return cid;
+    } catch (err: any) {
+      console.error('Error getting CID from token ID:', err);
+      return null;
+    }
+  };
+  
+  return { getTokenIdFromCID, getCIDFromTokenId };
+};
+
 export const useContract = () => {
   const { provider, signer, isConnected } = useWeb3();
   const [contracts, setContracts] = useState<{

@@ -9,9 +9,7 @@ import {
   GraduationCap,
   CheckCircle,
   AlertCircle,
-  Award,
-  Settings,
-  DollarSign
+  Settings
 } from 'lucide-react';
 import { useWeb3 } from '../contexts/Web3Context';
 import { useTheme } from '../hooks/useTheme';
@@ -48,9 +46,8 @@ const Header: React.FC = () => {
     { path: '/', label: 'Dashboard', icon: GraduationCap },
     { path: '/issue', label: 'Issue Certificate', icon: CheckCircle },
     { path: '/verify', label: 'Verify', icon: AlertCircle },
-    { path: '/scholarship-dashboard', label: 'Scholarships', icon: Award },
-    { path: '/claim-scholarship', label: 'Claim', icon: DollarSign },
     { path: '/admin-dashboard', label: 'Admin', icon: Settings },
+    { path: '/legacy-mint', label: 'Legacy Mint', icon: CheckCircle },
   ];
 
   return (
