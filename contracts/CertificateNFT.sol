@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title CertificateNFT
@@ -12,6 +13,7 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
  * @author Vignan Institute
  */
 contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
+    using Strings for uint256;
     // Roles
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -22,6 +24,12 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     mapping(uint256 => CertificateData) public certificates;
     mapping(address => uint256[]) public studentCertificates;
     mapping(string => bool) public usedHashes;
+    
+    // Semester Certificate mappings
+    mapping(uint256 => SemesterCertificate) public semesterCertificates;
+    mapping(address => uint256[]) public studentSemesterCerts;
+    mapping(string => bool) public usedMemoNumbers;
+    mapping(string => bool) public usedSerialNumbers;
     
     // Events
     event CertificateIssued(
@@ -37,6 +45,21 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
     event CertificateRevoked(uint256 indexed tokenId, address indexed student, address indexed admin);
     event CertificateVerified(uint256 indexed tokenId, bool isValid);
     
+    // Semester Certificate Events
+    event SemesterCertificateIssued(
+        uint256 indexed tokenId,
+        address indexed student,
+        string indexed serialNo,
+        string memoNo,
+        string regdNo,
+        string branch,
+        string examination,
+        uint256 sgpa,
+        uint256 timestamp
+    );
+    
+    event SemesterCertificateRevoked(uint256 indexed tokenId, address indexed student, address indexed admin);
+    
     // Structs
     struct CertificateData {
         string studentName;
@@ -47,6 +70,34 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
         uint256 issueDate;
         bool isRevoked;
         address issuer;
+    }
+    
+    struct Course {
+        string courseCode;
+        string courseTitle;
+        string gradeSecured;
+        uint256 gradePoints; // Grade points * 100 to avoid decimals
+        string status; // "P" for Pass, "F" for Fail, "A" for Absent
+        uint256 creditsObtained;
+    }
+    
+    struct SemesterCertificate {
+        string studentName;
+        string serialNo;
+        string memoNo;
+        string regdNo;
+        string branch;
+        string examination; // "IV B.Tech I Semester (VR19) Reg."
+        string monthYearExams; // "October 2022"
+        string aadharNo;
+        string studentPhoto; // IPFS hash
+        Course[] courses;
+        uint256 totalCredits;
+        uint256 sgpa; // Semester Grade Point Average * 100 (to avoid decimals)
+        string mediumOfInstruction;
+        uint256 issueDate;
+        address issuer;
+        bool isRevoked;
     }
     
     constructor() ERC721("Vignan Certificate", "VIGNAN") {
@@ -100,7 +151,7 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
         string memory _tokenURI = string(abi.encodePacked(
             _baseTokenURI,
             "/",
-            _toString(tokenId)
+            tokenId.toString()
         ));
         _setTokenURI(tokenId, _tokenURI);
         
@@ -215,25 +266,195 @@ contract CertificateNFT is ERC721, ERC721URIStorage, AccessControl, Pausable {
         return super.supportsInterface(interfaceId);
     }
     
+    
     /**
-     * @dev Convert uint256 to string
+     * @dev Mint a new semester certificate NFT
+     * @param student Address of the student
+     * @param serialNo Serial number of the certificate
+     * @param memoNo Memo number of the certificate
+     * @param certData Semester certificate data
      */
-    function _toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0";
+    function mintSemesterCertificate(
+        address student,
+        string memory serialNo,
+        string memory memoNo,
+        SemesterCertificate memory certData
+    ) external onlyRole(MINTER_ROLE) whenNotPaused returns (uint256) {
+        require(student != address(0), "Invalid student address");
+        require(bytes(serialNo).length > 0, "Serial number cannot be empty");
+        require(bytes(memoNo).length > 0, "Memo number cannot be empty");
+        require(!usedSerialNumbers[serialNo], "Serial number already used");
+        require(!usedMemoNumbers[memoNo], "Memo number already used");
+        require(bytes(certData.studentName).length > 0, "Student name cannot be empty");
+        require(bytes(certData.regdNo).length > 0, "Registration number cannot be empty");
+        require(certData.courses.length > 0, "At least one course required");
+        
+        _tokenIdCounter++;
+        uint256 tokenId = _tokenIdCounter;
+        
+        // Calculate SGPA from courses
+        uint256 calculatedSGPA = calculateSGPA(certData.courses);
+        
+        // Store semester certificate data
+        SemesterCertificate storage newCert = semesterCertificates[tokenId];
+        newCert.studentName = certData.studentName;
+        newCert.serialNo = serialNo;
+        newCert.memoNo = memoNo;
+        newCert.regdNo = certData.regdNo;
+        newCert.branch = certData.branch;
+        newCert.examination = certData.examination;
+        newCert.monthYearExams = certData.monthYearExams;
+        newCert.aadharNo = certData.aadharNo;
+        newCert.studentPhoto = certData.studentPhoto;
+        newCert.totalCredits = certData.totalCredits;
+        newCert.sgpa = calculatedSGPA;
+        newCert.mediumOfInstruction = certData.mediumOfInstruction;
+        newCert.issueDate = block.timestamp;
+        newCert.issuer = msg.sender;
+        newCert.isRevoked = false;
+        
+        // Copy courses
+        for (uint i = 0; i < certData.courses.length; i++) {
+            newCert.courses.push(certData.courses[i]);
         }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
+        
+        // Track student semester certificates
+        studentSemesterCerts[student].push(tokenId);
+        usedSerialNumbers[serialNo] = true;
+        usedMemoNumbers[memoNo] = true;
+        
+        // Mint NFT
+        _safeMint(student, tokenId);
+        
+        // Set token URI
+        string memory _tokenURI = string(abi.encodePacked(
+            _baseTokenURI,
+            "/semester/",
+            tokenId.toString()
+        ));
+        _setTokenURI(tokenId, _tokenURI);
+        
+        emit SemesterCertificateIssued(
+            tokenId,
+            student,
+            serialNo,
+            memoNo,
+            certData.regdNo,
+            certData.branch,
+            certData.examination,
+            calculatedSGPA,
+            block.timestamp
+        );
+        
+        return tokenId;
+    }
+    
+    /**
+     * @dev Calculate SGPA from courses
+     * @param courses Array of courses
+     * @return SGPA multiplied by 100
+     */
+    function calculateSGPA(Course[] memory courses) public pure returns (uint256) {
+        if (courses.length == 0) return 0;
+        
+        uint256 totalGradePoints = 0;
+        uint256 totalCredits = 0;
+        
+        for (uint i = 0; i < courses.length; i++) {
+            if (keccak256(bytes(courses[i].status)) == keccak256(bytes("P"))) {
+                totalGradePoints += courses[i].gradePoints * courses[i].creditsObtained;
+                totalCredits += courses[i].creditsObtained;
+            }
         }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
+        
+        if (totalCredits == 0) return 0;
+        
+        return totalGradePoints / totalCredits;
+    }
+    
+    /**
+     * @dev Get semester certificate data
+     * @param tokenId ID of the token
+     * @return Semester certificate data struct
+     */
+    function getSemesterCertificate(uint256 tokenId) external view returns (SemesterCertificate memory) {
+        require(_ownerOf(tokenId) != address(0), "Token does not exist");
+        return semesterCertificates[tokenId];
+    }
+    
+    /**
+     * @dev Get all semester certificates for a student
+     * @param student Address of the student
+     * @return Array of token IDs
+     */
+    function getStudentSemesterCertificates(address student) external view returns (uint256[] memory) {
+        return studentSemesterCerts[student];
+    }
+    
+    /**
+     * @dev Verify a semester certificate and return certificate data
+     * @param tokenId ID of the token to verify
+     * @return certificateData Semester certificate data struct
+     * @return isValid Whether the certificate is valid
+     */
+    function verifySemesterCertificate(uint256 tokenId) external view returns (SemesterCertificate memory certificateData, bool isValid) {
+        if (_ownerOf(tokenId) == address(0)) {
+            return (certificateData, false);
         }
-        return string(buffer);
+        
+        certificateData = semesterCertificates[tokenId];
+        
+        // Check if certificate is revoked
+        if (certificateData.isRevoked) {
+            return (certificateData, false);
+        }
+        
+        return (certificateData, true);
+    }
+    
+    /**
+     * @dev Revoke a semester certificate (admin only)
+     * @param tokenId ID of the token to revoke
+     */
+    function revokeSemesterCertificate(uint256 tokenId) external onlyRole(ADMIN_ROLE) {
+        require(_ownerOf(tokenId) != address(0), "Certificate does not exist");
+        require(!semesterCertificates[tokenId].isRevoked, "Certificate already revoked");
+        
+        semesterCertificates[tokenId].isRevoked = true;
+        
+        address student = ownerOf(tokenId);
+        emit SemesterCertificateRevoked(tokenId, student, msg.sender);
+    }
+    
+    /**
+     * @dev Update semester certificate details (admin only)
+     * @param tokenId ID of the certificate
+     * @param studentPhoto New student photo IPFS hash
+     */
+    function updateSemesterCertificatePhoto(
+        uint256 tokenId,
+        string memory studentPhoto
+    ) external onlyRole(ADMIN_ROLE) {
+        require(_ownerOf(tokenId) != address(0), "Certificate does not exist");
+        
+        semesterCertificates[tokenId].studentPhoto = studentPhoto;
+    }
+    
+    /**
+     * @dev Check if serial number is used
+     * @param serialNo Serial number to check
+     * @return Whether the serial number is used
+     */
+    function isSerialNumberUsed(string memory serialNo) external view returns (bool) {
+        return usedSerialNumbers[serialNo];
+    }
+    
+    /**
+     * @dev Check if memo number is used
+     * @param memoNo Memo number to check
+     * @return Whether the memo number is used
+     */
+    function isMemoNumberUsed(string memory memoNo) external view returns (bool) {
+        return usedMemoNumbers[memoNo];
     }
 }
