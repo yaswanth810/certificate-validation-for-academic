@@ -1,0 +1,34 @@
+<svg width="300" height="120" viewBox="0 0 300 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular logo background -->
+  <circle cx="60" cy="60" r="50" fill="#E8F4FD"/>
+  
+  <!-- Purple segments -->
+  <path d="M60 15L75 35H45L60 15Z" fill="#9467B8"/>
+  <path d="M15 60L35 45V75L15 60Z" fill="#9467B8"/>
+  <path d="M105 60L85 75V45L105 60Z" fill="#9467B8"/>
+  <path d="M60 105L45 85H75L60 105Z" fill="#9467B8"/>
+  <path d="M32 32L48 48H32V32Z" fill="#9467B8"/>
+  <path d="M88 32V48H72L88 32Z" fill="#9467B8"/>
+  <path d="M32 88H48L32 72V88Z" fill="#9467B8"/>
+  <path d="M88 88V72L72 88H88Z" fill="#9467B8"/>
+  
+  <!-- Blue cross structure -->
+  <path d="M56 15H64V105H56V15Z" fill="#0066CC"/>
+  <path d="M15 56H105V64H15V56Z" fill="#0066CC"/>
+  
+  <!-- White circle center -->
+  <circle cx="60" cy="60" r="14" fill="white"/>
+  
+  <!-- Blue star in center -->
+  <path d="M60 50L62.5 56H69L64 60L66.5 66L60 62L53.5 66L56 60L51 56H57.5L60 50Z" fill="#0066CC"/>
+  
+  <!-- VIGNAN Text -->
+  <text x="130" y="45" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#DC143C">VIGNAN</text>
+  
+  <!-- Tagline -->
+  <text x="130" y="65" font-family="Arial, sans-serif" font-size="10" fill="#333">Engineering</text>
+  <text x="185" y="65" font-family="Arial, sans-serif" font-size="10" fill="#333">|</text>
+  <text x="195" y="65" font-family="Arial, sans-serif" font-size="10" fill="#333">Pharmacy</text>
+  <text x="240" y="65" font-family="Arial, sans-serif" font-size="10" fill="#333">|</text>
+  <text x="130" y="80" font-family="Arial, sans-serif" font-size="10" fill="#333">Schools</text>
+</svg>

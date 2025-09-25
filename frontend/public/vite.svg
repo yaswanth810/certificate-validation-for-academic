@@ -1,0 +1,23 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Purple segments - 6 triangular sections -->
+  <path d="M256 0L358.6 153.4H153.4L256 0Z" fill="#9467B8"/>
+  <path d="M0 256L153.4 153.4V358.6L0 256Z" fill="#9467B8"/>
+  <path d="M512 256L358.6 358.6V153.4L512 256Z" fill="#9467B8"/>
+  <path d="M256 512L153.4 358.6H358.6L256 512Z" fill="#9467B8"/>
+  <path d="M108.6 108.6L256 153.4L153.4 256L108.6 108.6Z" fill="#9467B8"/>
+  <path d="M403.4 108.6L358.6 256L256 153.4L403.4 108.6Z" fill="#9467B8"/>
+  <path d="M108.6 403.4L153.4 256L256 358.6L108.6 403.4Z" fill="#9467B8"/>
+  <path d="M403.4 403.4L256 358.6L358.6 256L403.4 403.4Z" fill="#9467B8"/>
+  
+  <!-- Blue cross structure - 8 rays -->
+  <path d="M230 0H282V512H230V0Z" fill="#0066CC"/>
+  <path d="M0 230H512V282H0V230Z" fill="#0066CC"/>
+  <path d="M108.6 108.6L153.4 153.4L358.6 358.6L403.4 403.4L358.6 448.6L153.4 358.6L63.4 153.4L108.6 108.6Z" fill="#0066CC"/>
+  <path d="M403.4 108.6L358.6 153.4L153.4 358.6L108.6 403.4L153.4 448.6L358.6 358.6L448.6 153.4L403.4 108.6Z" fill="#0066CC"/>
+  
+  <!-- White circle center -->
+  <circle cx="256" cy="256" r="80" fill="white"/>
+  
+  <!-- Blue star in center -->
+  <path d="M256 200L268 232H304L276 252L288 284L256 264L224 284L236 252L208 232H244L256 200Z" fill="#0066CC"/>
+</svg>
