@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Minus, User, GraduationCap, FileText, Calendar } from 'lucide-react';
 import { useSemesterCertificate } from '../hooks/useSemesterCertificate';
+import { downloadSemesterCertificatePDF } from '../utils/certificateGenerator';
 
 interface Course {
   courseCode: string;
@@ -153,6 +154,37 @@ const SemesterCertificateForm: React.FC<SemesterCertificateFormProps> = ({
       
       if (onSuccess && result.tokenId) {
         onSuccess(result.tokenId);
+      }
+
+      // Auto-download PDF after successful mint
+      if (result.tokenId) {
+        const base = typeof window !== 'undefined' ? window.location.origin : '';
+        await downloadSemesterCertificatePDF({
+          tokenId: String(result.tokenId),
+          studentName: formData.studentName,
+          serialNo: formData.serialNo,
+          memoNo: formData.memoNo,
+          regdNo: formData.regdNo,
+          branch: formData.branch,
+          examination: formData.examination,
+          monthYearExams: formData.monthYearExams,
+          aadharNo: formData.aadharNo,
+          studentPhoto: formData.studentPhoto,
+          courses: courses.map(c => ({
+            courseCode: c.courseCode,
+            courseTitle: c.courseTitle,
+            gradeSecured: c.gradeSecured,
+            gradePoints: Math.round((c.gradePoints || 0) * 100),
+            status: c.status,
+            creditsObtained: c.creditsObtained
+          })),
+          totalCredits: calculateTotalCredits(),
+          sgpa: 0,
+          mediumOfInstruction: formData.mediumOfInstruction,
+          issueDate: Math.floor(Date.now() / 1000),
+          issuer: '',
+          verificationUrl: `${base}/semester-verify?tokenId=${result.tokenId}`
+        });
       }
 
     } catch (err: any) {

@@ -1,5 +1,6 @@
-import React from 'react';
-import { Calendar, User, GraduationCap, Award, FileText, Shield } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Calendar, User, GraduationCap, Award, FileText, Shield, QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
 
 interface Course {
   courseCode: string;
@@ -51,6 +52,17 @@ const SemesterCertificate: React.FC<SemesterCertificateProps> = ({
   const formatSGPA = (sgpa: number) => {
     return (sgpa / 100).toFixed(2);
   };
+
+  const verificationUrl = useMemo(() => {
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const params = new URLSearchParams({ tokenId, serial: certificate.serialNo });
+    return `${base}/verify-semester?${params.toString()}`;
+  }, [tokenId, certificate.serialNo]);
+
+  const [qrDataUrl, setQrDataUrl] = React.useState<string>('');
+  React.useEffect(() => {
+    QRCode.toDataURL(verificationUrl, { width: 120, margin: 2 }).then(setQrDataUrl).catch(() => setQrDataUrl(''));
+  }, [verificationUrl]);
 
   return (
     <div className={`bg-white border-2 border-gray-300 rounded-lg shadow-lg max-w-4xl mx-auto ${className}`}>
@@ -254,8 +266,14 @@ const SemesterCertificate: React.FC<SemesterCertificateProps> = ({
               <span className="text-green-600 font-semibold">Blockchain Verified</span>
             </div>
             <div className="flex items-center space-x-4 text-gray-600">
-              <span>Token ID: {tokenId}</span>
-              <span>Issuer: {certificate.issuer.slice(0, 6)}...{certificate.issuer.slice(-4)}</span>
+              {qrDataUrl && (
+                <img src={qrDataUrl} alt="QR" className="w-16 h-16 border border-gray-300 rounded bg-white" />
+              )}
+              <div className="text-right">
+                <div>Token ID: {tokenId}</div>
+                <div>Issuer: {certificate.issuer.slice(0, 6)}...{certificate.issuer.slice(-4)}</div>
+                <a href={verificationUrl} target="_blank" rel="noreferrer" className="text-blue-600 underline">Verify</a>
+              </div>
             </div>
           </div>
         </div>

@@ -12,6 +12,8 @@ export interface CertificateVerificationResult {
     issueDate: number;
     isRevoked: boolean;
     issuer: string;
+    metadataUrl?: string;
+    metadata?: any;
   };
   isValid: boolean;
   verificationMethod: 'tokenId' | 'qr';
@@ -47,7 +49,7 @@ export const useCertificateVerification = () => {
       }
 
       // Convert BigInt values to numbers
-      const processedData = {
+      const processedData: any = {
         studentName: certificateData.studentName || '',
         courseName: certificateData.courseName || '',
         grade: certificateData.grade || '',
@@ -59,6 +61,17 @@ export const useCertificateVerification = () => {
         isRevoked: certificateData.isRevoked || false,
         issuer: certificateData.issuer || ''
       };
+
+      // If ipfsHash present, attempt to fetch metadata JSON
+      if (processedData.ipfsHash && processedData.ipfsHash.startsWith('Qm')) {
+        const url = `https://ipfs.io/ipfs/${processedData.ipfsHash}`;
+        processedData.metadataUrl = url;
+        try {
+          const res = await fetch(url);
+          const json = await res.json().catch(() => null);
+          if (json) processedData.metadata = json;
+        } catch {}
+      }
 
       return {
         tokenId,

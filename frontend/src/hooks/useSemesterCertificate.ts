@@ -210,7 +210,8 @@ export const useSemesterCertificate = () => {
       // Test with static call first
       console.log('🔍 Testing with static call...');
       try {
-        const staticResult = await contracts.certificateNFT.mintSemesterCertificate.staticCall(
+        // Use signer-connected contract for static call so onlyRole checks see the correct msg.sender
+        const staticResult = await signedContracts.certificateNFT.mintSemesterCertificate.staticCall(
           studentAddress,
           finalSerialNo,
           finalMemoNo,

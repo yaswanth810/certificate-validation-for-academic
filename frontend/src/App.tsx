@@ -13,6 +13,7 @@ import PublicVerify from './pages/PublicVerify';
 import StudentDashboard from './pages/StudentDashboard';
 import SemesterCertificateVerification from './pages/SemesterCertificateVerification';
 import NotFound from './pages/NotFound';
+import LegacyPublicVerify from './pages/LegacyPublicVerify';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/issue" element={<IssueCertificate />} />
             <Route path="/verify" element={<VerifyCertificate />} />
+          <Route path="/verify-legacy" element={<LegacyPublicVerify />} />
             <Route path="/scholarships" element={<Scholarships />} />
             <Route path="/scholarship-dashboard" element={<ScholarshipDashboard />} />
             <Route path="/admin-dashboard" element={<AdminDashboard />} />

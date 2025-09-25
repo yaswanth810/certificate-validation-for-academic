@@ -367,3 +367,156 @@ export const verifyCertificate = async (certificateId: string, contractAddress: 
     return false;
   }
 };
+
+// === Semester certificate PDF generation ===
+export interface SemesterCertificatePDFData {
+  tokenId: string;
+  studentName: string;
+  serialNo: string;
+  memoNo: string;
+  regdNo: string;
+  branch: string;
+  examination: string;
+  monthYearExams: string;
+  aadharNo: string;
+  studentPhoto?: string;
+  courses: Array<{
+    courseCode: string;
+    courseTitle: string;
+    gradeSecured: string;
+    gradePoints: number; // stored as integer*100 on-chain; pass human-friendly or raw as needed
+    status: string;
+    creditsObtained: number;
+  }>;
+  totalCredits: number;
+  sgpa: number; // integer * 100
+  mediumOfInstruction: string;
+  issueDate: number; // seconds
+  issuer: string;
+  verificationUrl: string; // full URL to verify (will be QR-encoded)
+}
+
+export const generateSemesterCertificatePDF = async (data: SemesterCertificatePDFData): Promise<Blob> => {
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 12;
+
+  // Frame
+  pdf.setDrawColor('#2563eb');
+  pdf.setLineWidth(1.5);
+  pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+  pdf.setLineWidth(0.5);
+  pdf.rect(margin + 4, margin + 4, pageWidth - 2 * (margin + 4), pageHeight - 2 * (margin + 4));
+
+  // Header
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor('#111827');
+  pdf.setFontSize(16);
+  pdf.text("VIGNAN'S INSTITUTE OF INFORMATION TECHNOLOGY", pageWidth / 2, margin + 12, { align: 'center' });
+  pdf.setFontSize(10);
+  pdf.text('(AUTONOMOUS) • VISAKHAPATNAM, ANDHRA PRADESH, INDIA', pageWidth / 2, margin + 18, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.setTextColor('#1f2937');
+  pdf.text('MEMORANDUM OF GRADE / MARKS', pageWidth / 2, margin + 26, { align: 'center' });
+
+  // Serial/Memo
+  pdf.setFontSize(10);
+  pdf.setTextColor('#111827');
+  pdf.text(`Serial No.: ${data.serialNo}`, margin + 6, margin + 36);
+  pdf.setTextColor('#b91c1c');
+  pdf.text(`MEMO NO. ${data.memoNo}`, pageWidth - margin - 60, margin + 36);
+
+  // Student grid
+  pdf.setTextColor('#111827');
+  const leftX = margin + 6;
+  const rightX = pageWidth / 2 + 10;
+  let y = margin + 46;
+  const lineGap = 7;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Examination: ${data.examination}`, leftX, y);
+  pdf.text(`Regd. No.: ${data.regdNo}`, rightX, y); y += lineGap;
+  pdf.text(`Branch: ${data.branch}`, leftX, y);
+  pdf.text(`Month & Year of Exams: ${data.monthYearExams}`, rightX, y); y += lineGap;
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`Name: ${data.studentName}`, leftX, y);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Aadhar No.: ${data.aadharNo}`, rightX, y);
+
+  // Courses table
+  const tableTop = y + 8;
+  const colXs = [margin + 6, margin + 20, margin + 50, margin + 140, margin + 175, margin + 200, margin + 230];
+  const colTitles = ['S.No.', 'Course Code', 'Course Title', 'Grade', 'Gi', 'Status', 'Ci'];
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor('#111827');
+  colTitles.forEach((t, i) => pdf.text(t, colXs[i], tableTop));
+  pdf.setLineWidth(0.2);
+  pdf.line(margin + 4, tableTop + 2, pageWidth - margin - 4, tableTop + 2);
+
+  pdf.setFont('helvetica', 'normal');
+  let rowY = tableTop + 8;
+  data.courses.forEach((c, idx) => {
+    pdf.text(String(idx + 1), colXs[0], rowY);
+    pdf.text(c.courseCode, colXs[1], rowY);
+    pdf.text(c.courseTitle, colXs[2], rowY);
+    pdf.text(c.gradeSecured, colXs[3], rowY);
+    pdf.text(String(typeof c.gradePoints === 'number' ? c.gradePoints / 100 : c.gradePoints), colXs[4], rowY);
+    pdf.text(c.status, colXs[5], rowY);
+    pdf.text(String(c.creditsObtained), colXs[6], rowY);
+    rowY += 6;
+  });
+
+  // Summary row
+  rowY += 2;
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`Courses Registered: ${data.courses.length}`, colXs[0], rowY);
+  pdf.text(`Appeared: ${data.courses.filter(c => c.status !== 'A').length}`, colXs[2], rowY);
+  pdf.text(`Passed: ${data.courses.filter(c => c.status === 'P').length}`, colXs[3], rowY);
+  pdf.text('Total', colXs[4], rowY);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('—', colXs[5], rowY);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(String(data.totalCredits), colXs[6], rowY);
+
+  // Bottom notes and SGPA
+  const bottomY = rowY + 14;
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Medium of Instruction: ${data.mediumOfInstruction}`, leftX, bottomY);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`Semester Grade Point Average (SGPA): ${(data.sgpa / 100).toFixed(2)}`, leftX, bottomY + 7);
+  pdf.setFont('helvetica', 'normal');
+  const issued = new Date(data.issueDate * 1000);
+  const issuedStr = `${issued.toLocaleDateString('en-GB')}`;
+  pdf.text(`Date of Issue: ${issuedStr}`, leftX, bottomY + 20);
+  pdf.setFontSize(8);
+  pdf.text('P: Pass  •  F: Fail  •  AB: Absent  •  WH: With Held  •  MP: Mal Practice', leftX, bottomY + 27);
+
+  // QR code (verification)
+  try {
+    const qrCodeDataUrl = await QRCode.toDataURL(data.verificationUrl, { width: 140, margin: 1 });
+    pdf.addImage(qrCodeDataUrl, 'PNG', pageWidth - margin - 50, bottomY - 8, 40, 40);
+    pdf.setFontSize(8);
+    pdf.setTextColor('#666666');
+    pdf.text('Scan to verify', pageWidth - margin - 30, bottomY + 34, { align: 'center' });
+  } catch {}
+
+  // Footer chain info
+  pdf.setFontSize(9);
+  pdf.setTextColor('#2563eb');
+  pdf.text(`Token ID: ${data.tokenId}`, pageWidth - margin - 60, pageHeight - margin - 8);
+
+  return pdf.output('blob');
+};
+
+export const downloadSemesterCertificatePDF = async (data: SemesterCertificatePDFData): Promise<void> => {
+  const blob = await generateSemesterCertificatePDF(data);
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `semester-certificate-${data.tokenId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};

@@ -1,34 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, 
   Users, 
   DollarSign, 
   Award, 
   TrendingUp,
-  Settings,
   Download,
-  Eye,
-  Edit,
-  Trash2,
   AlertCircle,
-  CheckCircle,
-  Clock,
   Loader2,
-  Shield,
-  GraduationCap,
-  FileText
+  GraduationCap
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { ethers } from 'ethers';
 import { useScholarship } from '../hooks/useScholarship';
 import { useSemesterCertificate } from '../hooks/useSemesterCertificate';
 import { useWeb3 } from '../contexts/Web3Context';
-import { useTokens } from '../hooks/useTokens';
-import { CreateScholarshipForm, ScholarshipStats, TokenInfo } from '../types/scholarship';
+// import { useTokens } from '../hooks/useTokens';
+import { CreateScholarshipForm, ScholarshipStats } from '../types/scholarship';
 import ScholarshipCard from '../components/ScholarshipCard';
-import TokenSelector from '../components/TokenSelector';
-import RoleManager from '../components/RoleManager';
+// import TokenSelector from '../components/TokenSelector';
+// import RoleManager from '../components/RoleManager';
 import SemesterCertificateForm from '../components/SemesterCertificateForm';
-import SemesterCertificate from '../components/SemesterCertificate';
+import LegacyCertificateUploader from '../components/LegacyCertificateUploader';
+// import SemesterCertificate from '../components/SemesterCertificate';
 
 const AdminDashboard: React.FC = () => {
   const { isConnected } = useWeb3();
@@ -37,7 +30,7 @@ const AdminDashboard: React.FC = () => {
     createScholarship, 
     getScholarshipStats
   } = useScholarship();
-  const { getSemesterCertificate } = useSemesterCertificate();
+  // const { getSemesterCertificate } = useSemesterCertificate();
 
   // Available options for form dropdowns
   const availableCertificates = [
@@ -66,10 +59,10 @@ const AdminDashboard: React.FC = () => {
     'Physics'
   ];
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'create' | 'manage' | 'roles' | 'certificates'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'certificates'>('overview');
   const [stats, setStats] = useState<ScholarshipStats | null>(null);
   const [creating, setCreating] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<TokenInfo | undefined>(undefined);
+  // const [selectedToken, setSelectedToken] = useState<TokenInfo | undefined>(undefined);
   const [formData, setFormData] = useState<CreateScholarshipForm>({
     name: '',
     description: '',
@@ -155,13 +148,21 @@ const AdminDashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Admin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage scholarships and monitor platform activity
-          </p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Admin Dashboard
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manage certificates and monitor platform activity
+            </p>
+          </div>
+          <Link
+            to="/verify-semester"
+            className="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          >
+            Verify Semester
+          </Link>
         </div>
 
         {/* Navigation Tabs */}
@@ -169,9 +170,6 @@ const AdminDashboard: React.FC = () => {
           <nav className="flex space-x-8">
             {[
               { id: 'overview', label: 'Overview', icon: TrendingUp },
-              { id: 'roles', label: 'Role Management', icon: Shield },
-              { id: 'create', label: 'Create Scholarship', icon: Plus },
-              { id: 'manage', label: 'Manage Scholarships', icon: Settings },
               { id: 'certificates', label: 'Semester Certificates', icon: GraduationCap }
             ].map(({ id, label, icon: Icon }) => (
               <button
@@ -281,8 +279,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Create Scholarship Tab */}
-        {activeTab === 'create' && (
+        {/* Create Scholarship Tab - removed */}
+        {false && (activeTab as any) === 'create' && (
           <div className="max-w-4xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -489,8 +487,7 @@ const AdminDashboard: React.FC = () => {
                       </>
                     ) : (
                       <>
-                        <Plus className="w-4 h-4" />
-                        <span>Create Scholarship</span>
+                      <span>Create Scholarship</span>
                       </>
                     )}
                   </button>
@@ -500,15 +497,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Role Management Tab */}
-        {activeTab === 'roles' && (
-          <div className="max-w-4xl mx-auto">
-            <RoleManager />
-          </div>
+        {/* Role Management Tab - removed */}
+        {false && (activeTab as any) === 'roles' && (
+          <div className="max-w-4xl mx-auto">Roles</div>
         )}
 
-        {/* Manage Scholarships Tab */}
-        {activeTab === 'manage' && (
+        {/* Manage Scholarships Tab - removed */}
+        {false && (activeTab as any) === 'manage' && (
           <div className="max-w-6xl mx-auto">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
@@ -533,12 +528,8 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-gray-600 dark:text-gray-400 mb-6">
                       Create your first scholarship to get started
                     </p>
-                    <button
-                      onClick={() => setActiveTab('create')}
-                      className="btn-primary flex items-center space-x-2 mx-auto"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Create Scholarship</span>
+                    <button onClick={() => setActiveTab('overview')} className="btn-primary mx-auto">
+                      Go to Overview
                     </button>
                   </div>
                 ) : (
@@ -577,12 +568,17 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
               
-              <div className="p-6">
-                <SemesterCertificateForm 
-                  onSuccess={(tokenId) => {
-                    console.log('Certificate issued with token ID:', tokenId);
-                  }}
-                />
+              <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <SemesterCertificateForm 
+                    onSuccess={(tokenId) => {
+                      console.log('Certificate issued with token ID:', tokenId);
+                    }}
+                  />
+                </div>
+                <div>
+                  <LegacyCertificateUploader />
+                </div>
               </div>
             </div>
           </div>

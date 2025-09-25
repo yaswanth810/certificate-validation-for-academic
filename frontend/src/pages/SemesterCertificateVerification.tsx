@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, Shield, AlertCircle, CheckCircle, FileText, User } from 'lucide-react';
 import { useSemesterCertificate } from '../hooks/useSemesterCertificate';
 import SemesterCertificate from '../components/SemesterCertificate';
@@ -29,6 +29,16 @@ const SemesterCertificateVerification: React.FC = () => {
     setVerificationResult(null);
     setError(null);
   };
+
+  // Auto-load by tokenId from query string for deep-link/QR
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tid = params.get('tokenId');
+    if (tid && !verificationResult && !loading) {
+      setTokenId(tid);
+      verifySemesterCertificate(tid).then(setVerificationResult).catch((e:any)=>setError(e.message));
+    }
+  }, [loading, verificationResult, verifySemesterCertificate]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
