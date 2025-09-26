@@ -765,6 +765,74 @@ const LegacyCertificateMint: React.FC = () => {
                         )}
                       </div>
 
+                      {/* Certificate Preview */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-green-200 dark:border-green-700">
+                        <h5 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 text-center">
+                          📜 Certificate Preview
+                        </h5>
+                        
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/30 p-8 rounded-lg border-2 border-blue-200 dark:border-blue-700">
+                          {/* Certificate Header */}
+                          <div className="text-center mb-6">
+                            <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-2">
+                              VIGNAN INSTITUTE OF INFORMATION TECHNOLOGY
+                            </h3>
+                            <p className="text-lg text-blue-700 dark:text-blue-300 font-semibold">
+                              Certificate of Completion
+                            </p>
+                          </div>
+
+                          {/* Certificate Body */}
+                          <div className="text-center space-y-4">
+                            <p className="text-gray-700 dark:text-gray-300">This is to certify that</p>
+                            
+                            <div className="text-3xl font-bold text-gray-900 dark:text-white border-b-2 border-blue-300 dark:border-blue-600 pb-2 mb-4">
+                              {formData.studentName}
+                            </div>
+                            
+                            <p className="text-gray-700 dark:text-gray-300">
+                              has successfully completed the course
+                            </p>
+                            
+                            <div className="text-xl font-semibold text-blue-800 dark:text-blue-200 bg-white dark:bg-gray-700 p-3 rounded-lg border">
+                              {formData.courseName}
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mt-6">
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Grade Achieved</p>
+                                <p className="text-lg font-bold text-green-600 dark:text-green-400">{formData.grade}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600 dark:text-gray-400">Department</p>
+                                <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">{formData.department}</p>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-6 pt-4 border-t border-blue-200 dark:border-blue-700">
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Issue Date: {formData.issueDate}</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                                Token ID: {mintedTokenId} | Blockchain Verified ✓
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Original Document Preview */}
+                          {filePreview && (
+                            <div className="mt-6 pt-4 border-t border-blue-200 dark:border-blue-700">
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Original Document:</p>
+                              <div className="border border-gray-300 dark:border-gray-600 rounded p-2 bg-white dark:bg-gray-800">
+                                <img 
+                                  src={filePreview} 
+                                  alt="Original certificate" 
+                                  className="max-w-full h-32 mx-auto object-contain rounded"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Additional Info */}
                       <div className="text-xs text-green-700 dark:text-green-300 bg-green-100 dark:bg-green-900/30 p-3 rounded">
                         <p className="font-medium mb-1">Certificate Details:</p>

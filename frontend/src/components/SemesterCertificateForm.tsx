@@ -122,8 +122,24 @@ const SemesterCertificateForm: React.FC<SemesterCertificateFormProps> = ({
         throw new Error('Please fill in all required fields');
       }
 
-      if (courses.some(course => !course.courseCode || !course.courseTitle || !course.gradeSecured)) {
-        throw new Error('Please complete all course information');
+      // Filter out empty courses and validate remaining ones
+      const validCourses = courses.filter(course => 
+        course.courseCode.trim() && course.courseTitle.trim() && course.gradeSecured.trim()
+      );
+      
+      if (validCourses.length === 0) {
+        throw new Error('Please add at least one complete course with Course Code, Course Title, and Grade');
+      }
+      
+      // Check if any valid course has invalid numeric values
+      const invalidCourse = validCourses.find(course => {
+        const credits = Number(course.creditsObtained);
+        const gradePoints = Number(course.gradePoints);
+        return isNaN(credits) || isNaN(gradePoints) || credits <= 0 || gradePoints < 0;
+      });
+      
+      if (invalidCourse) {
+        throw new Error(`Invalid course data found. Please ensure all courses have valid numeric values for Credits and Grade Points. Problem course: ${invalidCourse.courseCode}`);
       }
 
       const totalCredits = calculateTotalCredits();
@@ -138,7 +154,7 @@ const SemesterCertificateForm: React.FC<SemesterCertificateFormProps> = ({
         monthYearExams: formData.monthYearExams,
         aadharNo: formData.aadharNo,
         studentPhoto: formData.studentPhoto,
-        courses: courses,
+        courses: validCourses, // Use filtered valid courses
         totalCredits: totalCredits,
         mediumOfInstruction: formData.mediumOfInstruction
       };

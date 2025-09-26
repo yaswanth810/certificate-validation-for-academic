@@ -134,16 +134,16 @@ export const useSemesterCertificate = () => {
         aadharNo: certData.aadharNo,
         studentPhoto: certData.studentPhoto,
         courses: certData.courses
-          .filter(course => course.creditsObtained > 0 && course.gradePoints > 0) // Filter out invalid courses
+          .filter(course => course.courseCode && course.courseTitle && course.gradeSecured) // Filter out incomplete courses
           .map(course => ({
             courseCode: course.courseCode,
             courseTitle: course.courseTitle,
             gradeSecured: course.gradeSecured,
-            gradePoints: Math.round(course.gradePoints * 100), // Convert to integer
+            gradePoints: Math.round(Number(course.gradePoints) * 100), // Convert to integer
             status: course.status || 'P', // Default to 'P' if status is empty
-            creditsObtained: course.creditsObtained
+            creditsObtained: Math.round(Number(course.creditsObtained)) // Convert to integer
           })),
-        totalCredits: certData.totalCredits,
+        totalCredits: Math.round(Number(certData.totalCredits)),
         sgpa: 0, // Will be calculated by contract
         mediumOfInstruction: certData.mediumOfInstruction,
         issueDate: 0, // Will be set by contract
@@ -155,23 +155,28 @@ export const useSemesterCertificate = () => {
       console.log('📊 Courses after filtering:', contractCertData.courses);
       console.log('📊 Course count:', contractCertData.courses.length);
       
-      // Log each course details with data types
+      // Log each course details with data types and conversion
       contractCertData.courses.forEach((course, index) => {
-        console.log(`Course ${index}:`, {
+        const originalCourse = certData.courses[index];
+        console.log(`Course ${index} BEFORE conversion:`, {
+          courseCode: originalCourse?.courseCode,
+          courseTitle: originalCourse?.courseTitle,
+          gradeSecured: originalCourse?.gradeSecured,
+          gradePoints: originalCourse?.gradePoints,
+          gradePointsType: typeof originalCourse?.gradePoints,
+          status: originalCourse?.status,
+          creditsObtained: originalCourse?.creditsObtained,
+          creditsType: typeof originalCourse?.creditsObtained
+        });
+        console.log(`Course ${index} AFTER conversion:`, {
           courseCode: course.courseCode,
           courseTitle: course.courseTitle,
           gradeSecured: course.gradeSecured,
           gradePoints: course.gradePoints,
+          gradePointsType: typeof course.gradePoints,
           status: course.status,
-          creditsObtained: course.creditsObtained
-        });
-        console.log(`Course ${index} types:`, {
-          courseCode: typeof course.courseCode,
-          courseTitle: typeof course.courseTitle,
-          gradeSecured: typeof course.gradeSecured,
-          gradePoints: typeof course.gradePoints,
-          status: typeof course.status,
-          creditsObtained: typeof course.creditsObtained
+          creditsObtained: course.creditsObtained,
+          creditsType: typeof course.creditsObtained
         });
       });
 
@@ -180,7 +185,21 @@ export const useSemesterCertificate = () => {
 
       // Validate that we have valid courses after filtering
       if (contractCertData.courses.length === 0) {
-        throw new Error('No valid courses found. All courses must have credits > 0 and grade points > 0.');
+        throw new Error('No valid courses found. Please ensure all courses have Course Code, Course Title, and Grade filled in.');
+      }
+
+      // Validate all numeric fields to prevent underflow
+      contractCertData.courses.forEach((course, index) => {
+        if (isNaN(course.gradePoints) || course.gradePoints < 0) {
+          throw new Error(`Invalid grade points for course ${index + 1}: ${course.gradePoints}`);
+        }
+        if (isNaN(course.creditsObtained) || course.creditsObtained < 0) {
+          throw new Error(`Invalid credits for course ${index + 1}: ${course.creditsObtained}`);
+        }
+      });
+
+      if (isNaN(contractCertData.totalCredits) || contractCertData.totalCredits < 0) {
+        throw new Error(`Invalid total credits: ${contractCertData.totalCredits}`);
       }
 
       // Auto-generate unique serial and memo numbers if they're already used
