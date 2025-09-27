@@ -127,10 +127,10 @@ const Logo: React.FC<LogoProps> = ({
       {showText && (
         <div className="flex flex-col">
           <h1 className={`${textSizeClasses[size]} font-bold text-red-600 dark:text-red-400 leading-tight`}>
-            VIGNAN'S
+            EduTrust
           </h1>
           <p className={`text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 leading-tight`}>
-            INSTITUTE OF INFORMATION TECHNOLOGY
+            AUTHENTICITY VALIDATOR
           </p>
         </div>
       )}

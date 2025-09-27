@@ -409,20 +409,18 @@ export const generateSemesterCertificatePDF = async (data: SemesterCertificatePD
   pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
   pdf.setLineWidth(0.5);
   pdf.rect(margin + 4, margin + 4, pageWidth - 2 * (margin + 4), pageHeight - 2 * (margin + 4));
-
   // Header
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor('#111827');
   pdf.setFontSize(16);
-  pdf.text("VIGNAN'S INSTITUTE OF INFORMATION TECHNOLOGY", pageWidth / 2, margin + 12, { align: 'center' });
+  pdf.text("EduTrust", pageWidth / 2, margin + 12, { align: 'center' });
   pdf.setFontSize(10);
-  pdf.text('(AUTONOMOUS) • VISAKHAPATNAM, ANDHRA PRADESH, INDIA', pageWidth / 2, margin + 18, { align: 'center' });
+  pdf.text('BLOCKCHAIN CERTIFICATE PLATFORM • SECURE • VERIFIABLE • TAMPER-PROOF', pageWidth / 2, margin + 18, { align: 'center' });
   pdf.setFontSize(12);
   pdf.setTextColor('#1f2937');
   pdf.text('MEMORANDUM OF GRADE / MARKS', pageWidth / 2, margin + 26, { align: 'center' });
 
   // Serial/Memo
-  pdf.setFontSize(10);
   pdf.setTextColor('#111827');
   pdf.text(`Serial No.: ${data.serialNo}`, margin + 6, margin + 36);
   pdf.setTextColor('#b91c1c');

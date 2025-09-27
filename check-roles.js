@@ -9,7 +9,7 @@ async function main() {
   console.log("Wallet address:", wallet.address);
   
   // Contract address and ABI
-  const contractAddress = "0xBbaBAABb432e735278f8f36F625FE4a84bbcF773";
+  const contractAddress = "0x754F223698E00B36b150B98B748E42DAfaE11C1D";
   
   // Minimal ABI for role checking
   const abi = [

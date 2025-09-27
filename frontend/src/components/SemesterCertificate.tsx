@@ -91,10 +91,10 @@ const SemesterCertificate: React.FC<SemesterCertificateProps> = ({
             {/* Institute Details */}
             <div className="text-center">
               <h1 className="text-lg font-bold text-gray-900 leading-tight">
-                VIGNAN'S INSTITUTE OF INFORMATION TECHNOLOGY
+                EduTrust
               </h1>
-              <p className="text-sm text-gray-600">(AUTONOMOUS)</p>
-              <p className="text-sm text-gray-600">VISAKHAPATNAM, ANDHRA PRADESH, INDIA</p>
+              <p className="text-sm text-gray-600">BLOCKCHAIN CERTIFICATE PLATFORM</p>
+              <p className="text-sm text-gray-600">SECURE • VERIFIABLE • TAMPER-PROOF</p>
               <h2 className="text-base font-semibold text-gray-800 mt-2">
                 MEMORANDUM OF GRADE / MARKS
               </h2>

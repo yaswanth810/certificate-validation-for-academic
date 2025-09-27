@@ -775,7 +775,7 @@ const LegacyCertificateMint: React.FC = () => {
                           {/* Certificate Header */}
                           <div className="text-center mb-6">
                             <h3 className="text-2xl font-bold text-blue-900 dark:text-blue-100 mb-2">
-                              VIGNAN INSTITUTE OF INFORMATION TECHNOLOGY
+                              EduTrust
                             </h3>
                             <p className="text-lg text-blue-700 dark:text-blue-300 font-semibold">
                               Certificate of Completion
